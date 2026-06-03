@@ -12,11 +12,17 @@ router = APIRouter(prefix="/api/v1", tags=["mcp"])
 forecaster = TransformerForecaster.default()
 
 
+def _extract_price_series(prices_df):
+    if "price" not in prices_df.columns:
+        return prices_df.assign(price=0.0)["price"]
+    return prices_df["price"]
+
+
 @router.get("/pricing-overview")
 async def pricing_overview() -> dict[str, object]:
     prices_df = load_local_prices()
     todays_price = get_todays_market_price(prices_df)
-    predictions = forecaster.predict_next_7_days(prices_df["price"] if "price" in prices_df else prices_df)
+    predictions = forecaster.predict_next_7_days(_extract_price_series(prices_df))
 
     start = date.today() + timedelta(days=1)
     trend = [
